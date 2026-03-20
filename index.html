@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenAI for Operational Decision-making — Columbia Business School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #06060a;
+      --surface: #0d0d14;
+      --surface2: #14141f;
+      --border: #1e1e2e;
+      --text: #e8e8ed;
+      --text-dim: #8888a0;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid background ── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* ── Floating orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 70%);
+      top: -200px; right: -100px;
+      animation: float1 20s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(34,197,94,0.08), transparent 70%);
+      bottom: -100px; left: -150px;
+      animation: float2 25s ease-in-out infinite;
+    }
+    .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(244,63,94,0.06), transparent 70%);
+      top: 50%; left: 50%;
+      animation: float3 30s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-40px, 30px); } }
+    @keyframes float2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(30px, -40px); } }
+    @keyframes float3 { 0%,100% { transform: translate(-50%,-50%); } 50% { transform: translate(calc(-50% + 50px), calc(-50% - 30px)); } }
+
+    /* ── Layout ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
+    section { padding: 5rem 0; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(6, 6, 10, 0.8);
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    nav .logo {
+      font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    nav .logo span { color: var(--accent-light); }
+    nav ul { list-style: none; display: flex; gap: 2rem; }
+    nav a {
+      color: var(--text-dim); text-decoration: none; font-size: 0.85rem;
+      font-weight: 500; transition: color 0.2s;
+    }
+    nav a:hover { color: var(--text); }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center;
+      padding-top: 60px;
+    }
+    .hero-inner { width: 100%; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent-glow);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 100px; padding: 0.4rem 1rem;
+      font-size: 0.8rem; font-weight: 500; color: var(--accent-light);
+      margin-bottom: 2rem;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 900; letter-spacing: -0.04em;
+      line-height: 1.05; margin-bottom: 1.5rem;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent-light), #a78bfa, var(--rose));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.2rem; color: var(--text-dim); max-width: 620px;
+      line-height: 1.7; margin-bottom: 2.5rem;
+    }
+
+    .hero-meta {
+      display: flex; flex-wrap: wrap; gap: 1.5rem;
+    }
+    .meta-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.5rem;
+      min-width: 180px;
+    }
+    .meta-card .label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 600;
+    }
+    .meta-card .value {
+      font-size: 1rem; font-weight: 600; color: var(--text);
+    }
+    .meta-card .value .mono {
+      font-family: 'JetBrains Mono', monospace; color: var(--accent-light);
+    }
+
+    /* ── Section headers ── */
+    .section-label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--accent-light); font-weight: 600; margin-bottom: 0.75rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-label::before {
+      content: ''; width: 20px; height: 1px; background: var(--accent-light);
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      font-weight: 800; letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      color: var(--text-dim); max-width: 600px; margin-bottom: 3rem;
+    }
+
+    /* ── About ── */
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    }
+    .about-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+      transition: border-color 0.3s;
+    }
+    .about-card:hover { border-color: rgba(99,102,241,0.3); }
+    .about-card .icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--accent-glow); border: 1px solid rgba(99,102,241,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; margin-bottom: 1rem;
+    }
+    .about-card h3 {
+      font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem;
+    }
+    .about-card p { color: var(--text-dim); font-size: 0.9rem; }
+
+    /* ── Speakers ── */
+    .speakers-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .speaker-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem;
+      transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .speaker-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .speaker-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
+    .speaker-card:hover::before { opacity: 1; }
+    .speaker-card.keynote::before { opacity: 1; background: linear-gradient(90deg, var(--accent-light), var(--accent), transparent); }
+
+    .speaker-tag {
+      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+      font-weight: 600; margin-bottom: 0.75rem; display: inline-block;
+      padding: 0.2rem 0.5rem; border-radius: 4px;
+    }
+    .speaker-tag.keynote { background: var(--accent-glow); color: var(--accent-light); }
+    .speaker-tag.talk { background: rgba(34,197,94,0.1); color: var(--green); }
+
+    .speaker-name {
+      font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem;
+      letter-spacing: -0.01em;
+    }
+    .speaker-affil {
+      font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.5rem;
+    }
+
+    /* ── Schedule ── */
+    .schedule-track {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .schedule-track h3 {
+      font-size: 1.1rem; font-weight: 700; margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .schedule-item {
+      display: grid; grid-template-columns: 100px 1fr; gap: 1rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .schedule-item:last-child { border-bottom: none; }
+    .schedule-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem; color: var(--accent-light); font-weight: 500;
+      padding-top: 0.1rem;
+    }
+    .schedule-content .title { font-weight: 600; font-size: 0.95rem; }
+    .schedule-content .speaker-inline { color: var(--text-dim); font-size: 0.85rem; }
+
+    /* ── Venue ── */
+    .venue-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 2.5rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    }
+    .venue-info h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem; }
+    .venue-detail {
+      display: flex; gap: 0.75rem; margin-bottom: 0.75rem;
+      color: var(--text-dim); font-size: 0.9rem;
+    }
+    .venue-detail .icon { color: var(--accent-light); width: 20px; text-align: center; }
+    .venue-map {
+      border-radius: 12px; overflow: hidden; min-height: 250px;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .venue-map iframe { width: 100%; height: 100%; min-height: 250px; border: none; border-radius: 12px; }
+
+    /* ── Registration ── */
+    .reg-banner {
+      background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,139,250,0.05));
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: 16px; padding: 3rem; text-align: center;
+    }
+    .reg-banner h3 {
+      font-size: 1.5rem; font-weight: 800; margin-bottom: 0.75rem;
+    }
+    .reg-banner p { color: var(--text-dim); margin-bottom: 1.5rem; }
+    .btn-reg {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent); color: #fff;
+      padding: 0.75rem 2rem; border-radius: 10px;
+      font-weight: 600; font-size: 0.95rem; text-decoration: none;
+      transition: all 0.2s; cursor: pointer;
+      border: none;
+    }
+    .btn-reg:hover { background: var(--accent-light); transform: translateY(-1px); }
+    .btn-reg.disabled {
+      background: var(--surface2); color: var(--text-dim);
+      border: 1px solid var(--border); cursor: default;
+    }
+    .btn-reg.disabled:hover { transform: none; }
+
+    /* ── Organizers ── */
+    .org-row {
+      display: flex; gap: 2rem; flex-wrap: wrap;
+    }
+    .org-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem 2rem;
+      flex: 1; min-width: 250px;
+    }
+    .org-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem; }
+    .org-name a { color: var(--text); text-decoration: none; }
+    .org-name a:hover { color: var(--accent-light); }
+    .org-affil { color: var(--text-dim); font-size: 0.85rem; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0; text-align: center;
+      color: var(--text-dim); font-size: 0.8rem;
+    }
+
+    /* ── Terminal decoration ── */
+    .terminal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+      margin-top: 3rem; max-width: 550px;
+    }
+    .terminal-bar {
+      display: flex; gap: 6px; padding: 12px 16px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+    .terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .terminal-dot:nth-child(1) { background: var(--rose); }
+    .terminal-dot:nth-child(2) { background: var(--amber); }
+    .terminal-dot:nth-child(3) { background: var(--green); }
+    .terminal-body {
+      padding: 1.25rem 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem; line-height: 1.8;
+    }
+    .terminal-body .prompt { color: var(--green); }
+    .terminal-body .cmd { color: var(--text); }
+    .terminal-body .output { color: var(--text-dim); }
+    .terminal-body .highlight { color: var(--accent-light); }
+    .terminal-body .cursor {
+      display: inline-block; width: 8px; height: 16px;
+      background: var(--accent-light); vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .about-grid { grid-template-columns: 1fr; }
+      .venue-card { grid-template-columns: 1fr; }
+      nav ul { display: none; }
+      .hero-meta { flex-direction: column; }
+      .speakers-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .speakers-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Nav -->
+<nav>
+  <div class="container">
+    <div class="logo"><span>GenAI</span> × Operations</div>
+    <ul>
+      <li><a href="#speakers">Speakers</a></li>
+      <li><a href="#schedule">Schedule</a></li>
+      <li><a href="#venue">Venue</a></li>
+      <li><a href="#register">Register</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Workshop — May 2026
+    </div>
+
+    <h1>
+      <span class="gradient">GenAI</span> for<br>
+      Operational<br>
+      Decision-making
+    </h1>
+
+    <p class="hero-sub">
+      A single-track workshop exploring how generative AI and autonomous agents
+      are transforming the way businesses make operational decisions — from
+      inventory and pricing to scheduling and supply chains.
+    </p>
+
+    <div class="hero-meta">
+      <div class="meta-card">
+        <div class="label">Date</div>
+        <div class="value"><span class="mono">FRI</span> May 8, 2026</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Location</div>
+        <div class="value">Columbia Business School</div>
+      </div>
+      <div class="meta-card">
+        <div class="label">Format</div>
+        <div class="value">Single-Track · All Day</div>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+      </div>
+      <div class="terminal-body">
+        <span class="prompt">$</span> <span class="cmd">workshop.query(</span><span class="highlight">"theme"</span><span class="cmd">)</span><br>
+        <span class="output">Can AI agents facilitate and augment operational business decisions</span><br>
+        <span class="output">that were previously made by humans and</span><br>
+        <span class="output">optimization algorithms?</span><br>
+        <br>
+        <span class="prompt">$</span> <span class="cmd">workshop.status</span><br>
+        <span class="output">&gt; speakers: <span class="highlight">confirmed</span> &nbsp;|&nbsp; registration: <span class="highlight">opening soon</span></span><br>
+        <span class="prompt">$</span> <span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Speakers -->
+<section id="speakers">
+  <div class="container">
+    <div class="section-label">Speakers</div>
+    <h2 class="section-title">The Lineup</h2>
+    <p class="section-desc">
+      Keynote and contributed talks from researchers at the forefront of
+      AI-driven operations.
+    </p>
+
+    <div class="speakers-grid">
+      <!-- Keynotes (alphabetical by last name) -->
+      <div class="speaker-card keynote">
+        <div class="speaker-tag keynote">Keynote</div>
+        <div class="speaker-name">Yannai Gonczarowski</div>
+        <div class="speaker-affil">Harvard Economics and Computer Science</div>
+      </div>
+
+      <div class="speaker-card keynote">
+        <div class="speaker-tag keynote">Keynote</div>
+        <div class="speaker-name">John Horton</div>
+        <div class="speaker-affil">MIT Sloan School of Management</div>
+      </div>
+
+      <div class="speaker-card keynote">
+        <div class="speaker-tag keynote">Keynote</div>
+        <div class="speaker-name">Athul Paul Jacob</div>
+        <div class="speaker-affil">Percepta.ai</div>
+      </div>
+
+      <div class="speaker-card keynote">
+        <div class="speaker-tag keynote">Keynote</div>
+        <div class="speaker-name">Francis de Vericourt</div>
+        <div class="speaker-affil">ESMT Berlin</div>
+      </div>
+
+      <!-- Talks (alphabetical by last name) -->
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Jackie Baek</div>
+        <div class="speaker-affil">NYU Stern School of Business</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Guanting Chen</div>
+        <div class="speaker-affil">UNC Chapel Hill Department of Statistics and Operations Research</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Sharon Di</div>
+        <div class="speaker-affil">Columbia Civil Engineering & Engineering Mechanics</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Nikhil Garg</div>
+        <div class="speaker-affil">Cornell ORIE @ Cornell Tech</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">George (Zhida) Gui</div>
+        <div class="speaker-affil">Columbia Business School</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Yichun Hu</div>
+        <div class="speaker-affil">Cornell Johnson Graduate School of Management</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Akshit Kumar</div>
+        <div class="speaker-affil">Yale University Center for Algorithms, Data and Market Design</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Andrew Li</div>
+        <div class="speaker-affil">CMU Tepper School of Business</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Zhen Lian</div>
+        <div class="speaker-affil">Yale School of Management</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Eugene Vinitsky</div>
+        <div class="speaker-affil">NYU Civil Engineering</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Kaizheng Wang</div>
+        <div class="speaker-affil">Columbia IEOR</div>
+      </div>
+
+      <div class="speaker-card">
+        <div class="speaker-tag talk">Talk</div>
+        <div class="speaker-name">Linwei Xin</div>
+        <div class="speaker-affil">Cornell ORIE</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Schedule -->
+<section id="schedule">
+  <div class="container">
+    <div class="section-label">Schedule</div>
+    <h2 class="section-title">Friday, May 8</h2>
+    <p class="section-desc">
+      Four sessions across the day; each session consists of 1 keynote + 3 talks.
+    </p>
+
+    <div class="schedule-track">
+      <h3>📋 Program Overview</h3>
+      <div class="schedule-item">
+        <div class="schedule-time">9:00 - 10:30</div>
+        <div class="schedule-content">
+          <div class="title">Session 1</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">10:30 - 11:00</div>
+        <div class="schedule-content">
+          <div class="title">Break</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">11:00 - 12:30</div>
+        <div class="schedule-content">
+          <div class="title">Session 2</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">12:30 - 2:00</div>
+        <div class="schedule-content">
+          <div class="title">Lunch</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">2:00 - 3:30</div>
+        <div class="schedule-content">
+          <div class="title">Session 3</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">3:30 - 4:00</div>
+        <div class="schedule-content">
+          <div class="title">Break</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">4:00 - 5:30</div>
+        <div class="schedule-content">
+          <div class="title">Session 4</div>
+        </div>
+      </div>
+      <div class="schedule-item">
+        <div class="schedule-time">6:00 PM</div>
+        <div class="schedule-content">
+          <div class="title">Dinner</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Venue -->
+<section id="venue">
+  <div class="container">
+    <div class="section-label">Venue</div>
+    <h2 class="section-title">Geffen Hall</h2>
+
+    <div class="venue-card">
+      <div class="venue-info">
+        <h3>Location Details</h3>
+        <div class="venue-detail">
+          <span class="icon">📍</span>
+          <span>Geffen Hall, 645 W 130th St, New York, NY 10027</span>
+        </div>
+        <div class="venue-detail">
+          <span class="icon">🎤</span>
+          <span>Talks: Cooperman Commons (1st floor, Room 120)</span>
+        </div>
+        <div class="venue-detail">
+          <span class="icon">🍽️</span>
+          <span>Meals & Dinner: Board Rooms (3rd floor, Rooms 310–330)</span>
+        </div>
+        <div class="venue-detail">
+          <span class="icon">🚇</span>
+          <span>Nearest subway: 125th St (1 train)</span>
+        </div>
+      </div>
+      <div class="venue-map">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3018.5!2d-73.958!3d40.8195!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c2f6391fa9d1c1%3A0xba46e3f0c1ca7e0!2sHenry%20R.%20Kravis%20Hall!5e0!3m2!1sen!2sus!4v1"
+          allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Register -->
+<section id="register">
+  <div class="container">
+    <div class="reg-banner">
+      <h3>Registration Opening Soon</h3>
+      <p>
+        The workshop is open to the public. Registration details will be announced shortly.<br>
+        Expected audience: ~100 academics from Columbia and other NYC-area institutions.
+      </p>
+      <button class="btn-reg disabled">
+        Registration Coming Soon
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- Organizers -->
+<section id="organizers">
+  <div class="container">
+    <div class="section-label">Organizers</div>
+    <h2 class="section-title">Organized By</h2>
+    <div class="org-row" style="margin-top: 1.5rem;">
+      <div class="org-card">
+        <div class="org-name"><a href="https://www.columbia.edu/~wm2428/" target="_blank">Will Ma</a></div>
+        <div class="org-affil">Columbia Business School</div>
+      </div>
+      <div class="org-card">
+        <div class="org-name"><a href="https://www.omarbesbes.com/" target="_blank">Omar Besbes</a></div>
+        <div class="org-affil">Columbia Business School</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p>GenAI for Operational Decision-making · May 8, 2026 · Columbia Business School</p>
+  </div>
+</footer>
+
+</body>
+</html>
+ for Operational Decision-making · May 8, 2026 · Columbia Business School</p>
+  </div>
+</footer>
+
+</body>
+</html>
